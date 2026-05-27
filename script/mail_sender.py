@@ -5,7 +5,7 @@ from pathlib import Path
 from dotenv import load_dotenv
 import os
 
-load_dotenv("../.env)
+load_dotenv("../.env")
 
 MAIL = os.getenv("MAIL")
 PASSWORT = os.getenv("MAIL_PASSWORD")
@@ -45,19 +45,19 @@ if len(xlsx_files) == 0:
 
 for file in xlsx_files:
 
-if "unbekannt" in file.name.lower():
+    if "unbekannt" in file.name.lower():
 
-    print(
-        "Ignoriert:",
-        file.name
-    )
+        print(
+            "Ignoriert:",
+            file.name
+        )
 
-    shutil.move(
-        file,
-        SENT / file.name
-    )
+        shutil.move(
+            file,
+            SENT / file.name
+        )
 
-    continue
+        continue
 
     store = None
 
@@ -110,14 +110,9 @@ if "unbekannt" in file.name.lower():
 
     msg.add_attachment(
         daten,
-        maintype=
-        "application",
-
-        subtype=
-        "octet-stream",
-
-        filename=
-        file.name
+        maintype="application",
+        subtype="octet-stream",
+        filename=file.name
     )
 
     smtp = smtplib.SMTP_SSL(

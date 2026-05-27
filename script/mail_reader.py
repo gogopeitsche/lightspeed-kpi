@@ -4,7 +4,7 @@ from pathlib import Path
 from dotenv import load_dotenv
 import os
 
-load_dotenv("../.env)
+load_dotenv("../.env")
 
 MAIL = os.getenv("MAIL")
 PASSWORT = os.getenv("MAIL_PASSWORD")
