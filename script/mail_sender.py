@@ -2,9 +2,13 @@ import smtplib
 import shutil
 from email.message import EmailMessage
 from pathlib import Path
+from dotenv import load_dotenv
+import os
 
-MAIL = "lightspeed60stn@gmail.com"
-PASSWORT = "oues nnfe ehoh rirq"
+load_dotenv("../.env)
+
+MAIL = os.getenv("MAIL")
+PASSWORT = os.getenv("MAIL_PASSWORD")
 
 OUTPUT = Path("../output")
 

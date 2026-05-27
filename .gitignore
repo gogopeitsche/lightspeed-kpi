@@ -1,0 +1,8 @@
+.env
+archive/
+logs/
+output/
+sent/
+input/
+__pycache__/
+.DS_Store
