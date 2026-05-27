@@ -19,16 +19,16 @@ SENT.mkdir(
 
 empfaenger = {
     "stuttgart":
-    "mert.gng9@gmail.com",
+    "stuttgart@60stn.de",
 
     "konstanz":
-    "mert.gng9@gmail.com",
+    "konstanz@60stn.de",
 
     "freiburg":
-    "mert.gng9@gmail.com",
+    "freiburg@60stn.de",
 
     "zurich":
-    "mert.gng9@gmail.com"
+    "zuerich@60stn.ch"
 }
 
 xlsx_files = list(
