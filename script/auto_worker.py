@@ -6,6 +6,10 @@ INPUT = Path("../input")
 OUTPUT = Path("../output")
 ARCHIVE = Path("../archive")
 
+INPUT.mkdir(exist_ok=True)
+OUTPUT.mkdir(exist_ok=True)
+ARCHIVE.mkdir(exist_ok=True)
+
 produkte = [
     "mit-Burrata+",
     "Acqua Morelli Sparkling 0.75"
