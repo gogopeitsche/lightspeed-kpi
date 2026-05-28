@@ -114,8 +114,7 @@ for file in xlsx_files:
         subtype="octet-stream",
         filename=file.name
     )
-
-     smtp = smtplib.SMTP(
+    smtp = smtplib.SMTP(
     "smtp.gmail.com",
     587
     )
