@@ -11,6 +11,10 @@ PASSWORT = os.getenv("MAIL_PASSWORD")
 
 INPUT = Path("../input")
 
+INPUT.mkdir(
+    exist_ok=True
+)
+
 imap = imaplib.IMAP4_SSL(
     "imap.gmail.com"
 )
