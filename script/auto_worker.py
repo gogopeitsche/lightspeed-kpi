@@ -5,6 +5,13 @@ import shutil
 INPUT = Path("../input")
 OUTPUT = Path("../output")
 ARCHIVE = Path("../archive")
+REPORT_TEXTS = Path(
+    "../report_texts"
+)
+
+REPORT_TEXTS.mkdir(
+    exist_ok=True
+)
 
 INPUT.mkdir(exist_ok=True)
 OUTPUT.mkdir(exist_ok=True)
@@ -177,4 +184,31 @@ for file in csv_files:
     print(
         "Fertig:",
         output_name
+    )
+    txt_file = (
+        REPORT_TEXTS /
+        f"{store}_{datum}.txt"
+    )
+
+    mail_text = f"""
+📊  {store.title()} – {datum}
+
+Excel-Report wurde erstellt.
+
+📎 Datei:
+{output_name.name}
+"""
+
+    with open(
+        txt_file,
+        "w"
+    ) as f:
+
+        f.write(
+            mail_text
+        )
+
+    print(
+        "Text erstellt:",
+        txt_file
     )
