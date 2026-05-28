@@ -75,14 +75,6 @@ while True:
             "Sende Reports"
         )
 
-        subprocess.run(
-            [
-                "python3",
-                "./mail_sender.py"
-            ],
-            check=True
-        )
-
         log(
             "Warte 5 Minuten"
         )
