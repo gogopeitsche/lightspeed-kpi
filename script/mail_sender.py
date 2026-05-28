@@ -17,6 +17,13 @@ SENT = Path("../sent")
 SENT.mkdir(
     exist_ok=True
 )
+TEXTS = Path(
+    "../report_texts"
+)
+
+TEXTS.mkdir(
+    exist_ok=True
+)
 
 empfaenger = {
     "stuttgart":
@@ -81,6 +88,23 @@ for file in xlsx_files:
     ziel = empfaenger[
         store
     ]
+    text_file = (
+        TEXTS /
+        f"{file.stem}.txt"
+    )
+
+    mail_text = (
+        "Automatischer KPI Report"
+    )
+
+    if text_file.exists():
+
+        with open(
+            text_file,
+            "r"
+        ) as f:
+
+            mail_text = f.read()
 
     with open(
         file,
@@ -102,7 +126,7 @@ for file in xlsx_files:
         f"KPI Report {file.stem}",
 
         "text":
-        "Automatischer KPI Report",
+        mail_text,
 
         "attachments": [
             {

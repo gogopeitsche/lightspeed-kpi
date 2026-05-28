@@ -1,175 +1,82 @@
 import pandas as pd
-from pathlib import Path
 import shutil
+from pathlib import Path
 
 INPUT = Path("../input")
 OUTPUT = Path("../output")
 ARCHIVE = Path("../archive")
-REPORT_TEXTS = Path(
-    "../report_texts"
-)
-
-REPORT_TEXTS.mkdir(
-    exist_ok=True
-)
+REPORT_TEXTS = Path("../report_texts")
 
 INPUT.mkdir(exist_ok=True)
 OUTPUT.mkdir(exist_ok=True)
 ARCHIVE.mkdir(exist_ok=True)
+REPORT_TEXTS.mkdir(exist_ok=True)
 
-produkte = [
-    "mit-Burrata+",
-    "Acqua Morelli Sparkling 0.75"
-]
-
-csv_files = list(INPUT.glob("*.csv"))
+csv_files = list(
+    INPUT.glob("*.csv")
+)
 
 if len(csv_files) == 0:
-    print("Keine Dateien gefunden")
+
+    print(
+        "Keine Dateien gefunden"
+    )
+
     quit()
 
 for file in csv_files:
-
-    if file.name == "transaktionen.csv":
-
-        print(
-            "Archiviert:",
-            file.name
-        )
-
-        shutil.move(
-            file,
-            ARCHIVE / file.name
-        )
-
-        continue
 
     print(
         "Bearbeite:",
         file.name
     )
 
-    name = file.stem.lower()
+    df = pd.read_csv(
+        file
+    )
 
-    store = "unbekannt"    
+    dateiname = file.stem.lower()
 
-    if "stuttgart" in name:
-        store = "stuttgart"
+    if "zurich" in dateiname:
 
-    elif "konstanz" in name:
-        store = "konstanz"
-
-    elif "freiburg" in name:
-        store = "freiburg"
-
-    elif "zurich" in name:
         store = "zurich"
 
-    df = pd.read_csv(file)
+    elif "freiburg" in dateiname:
 
-    df = df[
-        (df["Typ"] == "SALE")
-        &
-        (df["Mng"] > 0)
-    ]
+        store = "freiburg"
 
-    df = df[
-        ~df["Mitarbeiter"]
-        .str.contains(
-            "Online",
-            case=False,
-            na=False
-        )
-    ]
+    elif "stuttgart" in dateiname:
 
-    df["Mitarbeiter"] = (
-        df["Mitarbeiter"]
-        .str.replace(
-            r"\(.*\)",
-            "",
-            regex=True
-        )
-        .str.strip()
-    )
+        store = "stuttgart"
 
-    umsatz = (
-        df.groupby(
-            "Mitarbeiter"
-        )["VorSteuern"]
-        .sum()
-        .reset_index()
-    )
+    elif "konstanz" in dateiname:
 
-    report = umsatz.rename(
-        columns={
-            "VorSteuern":
-            "Gesamtumsatz"
-        }
-    )
-
-    for produkt in produkte:
-
-        produkt_df = df[
-            df["Artikel"]
-            ==
-            produkt
-        ]
-
-        produkt_sum = (
-            produkt_df.groupby(
-                "Mitarbeiter"
-            )
-            .agg({
-                "Mng":"sum",
-                "VorSteuern":"sum"
-            })
-            .reset_index()
-        )
-
-        produkt_sum = produkt_sum.rename(
-            columns={
-                "Mng":
-                f"{produkt}_Stk",
-
-                "VorSteuern":
-                f"{produkt}_Umsatz"
-            }
-        )
-
-        report = report.merge(
-            produkt_sum,
-            on="Mitarbeiter",
-            how="left"
-        )
-
-        report = report.fillna(0)
-
-        report[
-            f"{produkt}_%"
-        ] = (
-            report[
-                f"{produkt}_Umsatz"
-            ]
-            /
-            report[
-                "Gesamtumsatz"
-            ]
-        ) * 100
-
-    report = report.round(2)
-
-    teile = file.stem.split("_")
-
-    if len(teile) >= 2:
-        datum = teile[-2]
+        store = "konstanz"
 
     else:
-        datum = "ohne_datum"
+
+        store = "unbekannt"
+
+    datum = (
+        str(df["Datum"].iloc[0])
+        .split(" ")[0]
+        .replace("-", ".")
+    )
 
     output_name = (
         OUTPUT /
         f"{store}_{datum}.xlsx"
     )
+
+    report = df[
+        [
+            "Datum",
+            "Mitarbeiter",
+            "Artikel",
+            "FinalPreis",
+            "Identifikator"
+        ]
+    ]
 
     report.to_excel(
         output_name,
@@ -185,19 +92,127 @@ for file in csv_files:
         "Fertig:",
         output_name
     )
+
+    df = df[
+        ~df["Mitarbeiter"].str.contains(
+            "Order Anywhere",
+            case=False,
+            na=False
+        )
+    ]
+
+    df = df[
+        df["Typ"] == "SALE"
+    ]
+
+    df = df[
+        df["Mng"] > 0
+    ]
+    
+    df["Mitarbeiter"] = (
+    df["Mitarbeiter"]
+    .str.replace(
+        r"\(\d+\)",
+        "",
+        regex=True
+    )
+    .str.strip()
+)
+
+    burrata = df[
+        df["Artikel"] == "mit-Burrata+"
+    ]
+
+    burrata_counts = (
+        burrata
+        .groupby("Mitarbeiter")
+        .size()
+    )
+
+    wasser = df[
+        df["Artikel"].str.contains(
+            "morelli|aqua|acqua",
+            case=False,
+            na=False
+        )
+        &
+        df["Artikel"].str.contains(
+            "0,75|0.75",
+            case=False,
+            na=False
+        )
+    ]
+
+    wasser_counts = (
+        wasser
+        .groupby("Mitarbeiter")
+        .size()
+    )
+
+    bons = (
+        df
+        .groupby("Mitarbeiter")
+        ["Identifikator"]
+        .nunique()
+    )
+
     txt_file = (
         REPORT_TEXTS /
         f"{store}_{datum}.txt"
     )
 
     mail_text = f"""
-📊  {store.title()} – {datum}
+📊 {store.title()} – {datum}
 
-Excel-Report wurde erstellt.
-
-📎 Datei:
-{output_name.name}
+🥇 Burrata
 """
+
+    for mitarbeiter in bons.index:
+
+        anzahl = (
+            burrata_counts.get(
+                mitarbeiter,
+                0
+            )
+        )
+
+        quote = round(
+            (
+                anzahl /
+                bons[mitarbeiter]
+            ) * 100,
+            2
+        )
+
+        mail_text += (
+            f"{mitarbeiter} – "
+            f"{anzahl} "
+            f"({quote}%)\n"
+        )
+
+    mail_text += "\n🥤 Wasserquote\n"
+
+    for mitarbeiter in bons.index:
+
+        wasser_anzahl = (
+            wasser_counts.get(
+                mitarbeiter,
+                0
+            )
+        )
+
+        wasser_quote = round(
+            (
+                wasser_anzahl /
+                bons[mitarbeiter]
+            ) * 100,
+            2
+        )
+
+        mail_text += (
+            f"{mitarbeiter} – "
+            f"{wasser_quote}%\n"
+        )
 
     with open(
         txt_file,
