@@ -115,10 +115,12 @@ for file in xlsx_files:
         filename=file.name
     )
 
-    smtp = smtplib.SMTP_SSL(
-        "smtp.gmail.com",
-        465
+     smtp = smtplib.SMTP(
+    "smtp.gmail.com",
+    587
     )
+
+    smtp.starttls()
 
     smtp.login(
         MAIL,
