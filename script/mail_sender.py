@@ -1,14 +1,15 @@
-import smtplib
+import resend
 import shutil
-from email.message import EmailMessage
 from pathlib import Path
 from dotenv import load_dotenv
 import os
+import base64
 
 load_dotenv()
 
-MAIL = os.getenv("MAIL")
-PASSWORT = os.getenv("MAIL_PASSWORD")
+resend.api_key = os.getenv(
+    "RESEND_API_KEY"
+)
 
 OUTPUT = Path("../output")
 
@@ -28,7 +29,7 @@ empfaenger = {
     "freiburg@60stn.de",
 
     "zurich":
-    "zuerich@60stn.ch"
+    "zuerich@60stn.ch",
 }
 
 xlsx_files = list(
@@ -81,56 +82,38 @@ for file in xlsx_files:
         store
     ]
 
-    msg = EmailMessage()
-
-    msg[
-        "Subject"
-    ] = (
-        f"KPI Report {file.stem}"
-    )
-
-    msg[
-        "From"
-    ] = MAIL
-
-    msg[
-        "To"
-    ] = ziel
-
-    msg.set_content(
-        "Automatischer KPI Report"
-    )
-
     with open(
         file,
         "rb"
     ) as f:
 
-        daten = f.read()
+        anhang = base64.b64encode(
+            f.read()
+        ).decode("utf-8")
+    resend.Emails.send({
 
-    msg.add_attachment(
-        daten,
-        maintype="application",
-        subtype="octet-stream",
-        filename=file.name
-    )
-    smtp = smtplib.SMTP(
-    "smtp.gmail.com",
-    587
-    )
+        "from":
+        "reports@reports60stn.org",
 
-    smtp.starttls()
+        "to":
+        ziel,
 
-    smtp.login(
-        MAIL,
-        PASSWORT
-    )
+        "subject":
+        f"KPI Report {file.stem}",
 
-    smtp.send_message(
-        msg
-    )
+        "text":
+        "Automatischer KPI Report",
 
-    smtp.quit()
+        "attachments": [
+            {
+                "filename":
+                file.name,
+
+                "content":
+                anhang
+            }
+        ]
+    })
 
     print(
         "Gesendet:",
