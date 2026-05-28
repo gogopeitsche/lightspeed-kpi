@@ -15,6 +15,24 @@ INPUT.mkdir(
     exist_ok=True
 )
 
+processed_file = "../processed_mails.txt"
+
+processed_ids = set()
+
+if os.path.exists(
+    processed_file
+):
+
+    with open(
+        processed_file,
+        "r"
+    ) as f:
+
+        processed_ids = set(
+            line.strip()
+            for line in f
+        )
+
 imap = imaplib.IMAP4_SSL(
     "imap.gmail.com"
 )
@@ -24,7 +42,9 @@ imap.login(
     PASSWORT
 )
 
-imap.select("INBOX")
+imap.select(
+    "INBOX"
+)
 
 status, messages = imap.search(
     None,
@@ -39,6 +59,17 @@ print(
 )
 
 for mail_id in mail_ids:
+
+    mail_id_str = mail_id.decode()
+
+    if mail_id_str in processed_ids:
+
+        print(
+            "Bereits verarbeitet:",
+            mail_id_str
+        )
+
+        continue
 
     _, msg_data = imap.fetch(
         mail_id,
@@ -100,10 +131,19 @@ for mail_id in mail_ids:
                 filename
             )
 
-            imap.store(
-            mail_id,
-            "+FLAGS",
-            "\\Seen"
-            )
+    with open(
+        processed_file,
+        "a"
+    ) as f:
+
+        f.write(
+            mail_id_str + "\n"
+        )
+
+    imap.store(
+        mail_id,
+        "+FLAGS",
+        "\\Seen"
+    )
 
 imap.logout()
