@@ -71,7 +71,8 @@ while True:
             ],
             check=True
         )
-                log(
+
+        log(
             "Sende Reports"
         )
 
