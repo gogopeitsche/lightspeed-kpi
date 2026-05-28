@@ -71,9 +71,29 @@ while True:
             ],
             check=True
         )
-        log(
+                log(
             "Sende Reports"
         )
+
+        try:
+
+            subprocess.run(
+                [
+                    "python3",
+                    "./mail_sender.py"
+                ],
+                check=True
+            )
+
+            log(
+                "Mailversand fertig"
+            )
+
+        except Exception as e:
+
+            log(
+                f"MAIL FEHLER: {e}"
+            )
 
         log(
             "Warte 5 Minuten"
