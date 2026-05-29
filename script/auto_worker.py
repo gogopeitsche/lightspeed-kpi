@@ -92,23 +92,6 @@ for file in csv_files:
         "Fertig:",
         output_name
     )
-
-    df = df[
-        ~df["Mitarbeiter"].str.contains(
-            "Order Anywhere",
-            case=False,
-            na=False
-        )
-    ]
-
-    df = df[
-        df["Typ"] == "SALE"
-    ]
-
-    df = df[
-        df["Mng"] > 0
-    ]
-    
     df["Mitarbeiter"] = (
     df["Mitarbeiter"]
     .str.replace(
@@ -119,24 +102,50 @@ for file in csv_files:
     .str.strip()
 )
 
-    burrata = df[
-        df["Artikel"] == "mit-Burrata+"
+    produktmix_df = df.copy()
+
+    produktmix_df["Mitarbeiter"] = (
+        produktmix_df["Mitarbeiter"]
+        .str.replace(
+            r"\(\d+\)",
+            "",
+            regex=True
+        )
+        .str.strip()
+    )
+
+    produktmix_df = produktmix_df[
+        produktmix_df["Mitarbeiter"] != "Order Anywhere"
     ]
+
+    df = df[
+        df["Typ"] == "SALE"
+    ]
+
+    burrata = produktmix_df[
+    produktmix_df["Artikel"].isin(
+        [
+            "mit Burrata",
+            "mit-Burrata+"
+        ]
+    )
+]
 
     burrata_counts = (
         burrata
-        .groupby("Mitarbeiter")
-        .size()
+        .groupby("Mitarbeiter")["Mng"]
+        .sum()
+        .round(0)
+        .astype(int)
     )
-
-    wasser = df[
-        df["Artikel"].str.contains(
+    wasser = produktmix_df[
+        produktmix_df["Artikel"].str.contains(
             "morelli|aqua|acqua",
             case=False,
             na=False
         )
         &
-        df["Artikel"].str.contains(
+        produktmix_df["Artikel"].str.contains(
             "0,75|0.75",
             case=False,
             na=False
@@ -146,9 +155,11 @@ for file in csv_files:
     wasser_counts = (
         wasser
         .groupby("Mitarbeiter")
-        .size()
+        ["Mng"]
+        .sum()
+        .round(0)
+        .astype(int)
     )
-
     bons = (
         df
         .groupby("Mitarbeiter")
@@ -166,7 +177,6 @@ for file in csv_files:
 
 🥇 Burrata
 """
-
     for mitarbeiter in bons.index:
 
         anzahl = (
@@ -211,7 +221,8 @@ for file in csv_files:
 
         mail_text += (
             f"{mitarbeiter} – "
-            f"{wasser_quote}%\n"
+            f"{wasser_anzahl} "
+            f"({wasser_quote}%)\n"
         )
 
     with open(
