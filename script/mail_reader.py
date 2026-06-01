@@ -1,13 +1,14 @@
-import imaplib
-import email
-from pathlib import Path
-from dotenv import load_dotenv
 import os
+from pathlib import Path
+
+import requests
+import resend
+from dotenv import load_dotenv
 
 load_dotenv()
 
-MAIL = os.getenv("MAIL")
-PASSWORT = os.getenv("MAIL_PASSWORD")
+# Resend API Key
+resend.api_key = os.getenv("RESEND_API_KEY")
 
 INPUT = Path("../input")
 
@@ -33,103 +34,149 @@ if os.path.exists(
             for line in f
         )
 
-imap = imaplib.IMAP4_SSL(
-    "imap.gmail.com"
-)
+try:
 
-imap.login(
-    MAIL,
-    PASSWORT
-)
+    print(os.getenv("RESEND_API_KEY")[:15])
+    response = resend.EmailsReceiving.list()
 
-imap.select(
-    "INBOX"
-)
+except Exception as e:
 
-status, messages = imap.search(
-    None,
-    '(UNSEEN SUBJECT "Lightspeed")'
-)
+    print(
+        f"Fehler beim Abrufen der Mails: {e}"
+    )
 
-mail_ids = messages[0].split()
+    raise
+
+mails = response.get(
+    "data",
+    []
+)
 
 print(
-    "Neue Mails:",
-    len(mail_ids)
+    "Neue Mails gefunden:",
+    len(mails)
 )
 
-for mail_id in mail_ids:
+for mail in mails:
 
-    mail_id_str = mail_id.decode()
+    mail_id = mail.get("id")
 
-    if mail_id_str in processed_ids:
+    if not mail_id:
+        continue
+
+    if mail_id in processed_ids:
 
         print(
             "Bereits verarbeitet:",
-            mail_id_str
+            mail_id
         )
 
         continue
 
-    _, msg_data = imap.fetch(
-        mail_id,
-        "(RFC822)"
+    try:
+
+        full_mail = resend.EmailsReceiving.get(
+            mail_id
+        )
+
+    except Exception as e:
+
+        print(
+            f"Fehler beim Abrufen von Mail {mail_id}: {e}"
+        )
+
+        continue
+
+    subject = full_mail.get(
+        "subject",
+        ""
     )
 
-    for response in msg_data:
+    print(
+        "Betreff:",
+        subject
+    )
 
-        if not isinstance(
-            response,
-            tuple
+    attachments = full_mail.get(
+        "attachments",
+        []
+    )
+    print("Attachments:")
+    print(attachments)
+
+    if not attachments:
+
+        print(
+            "Keine Anhänge gefunden."
+        )
+
+        with open(
+            processed_file,
+            "a"
+        ) as f:
+
+            f.write(
+                mail_id + "\n"
+            )
+
+        continue
+
+    attachment = resend.EmailsReceiving.Attachments.get(
+        email_id=mail_id,
+        attachment_id=attachments[0]["id"]
+    )
+
+    download_url = attachment["download_url"]
+
+    try:
+
+        r = requests.get(
+            download_url,
+            timeout=60
+        )
+
+        r.raise_for_status()
+
+    except Exception as e:
+
+        print(
+            f"Fehler beim Download: {e}"
+        )
+
+        continue
+
+    for attachment in attachments:
+
+        filename = attachment.get(
+            "filename"
+        )
+
+        if not filename:
+            continue
+
+        if not filename.lower().endswith(
+            ".csv"
         ):
             continue
 
-        msg = email.message_from_bytes(
-            response[1]
+        file_path = (
+            INPUT /
+            filename
         )
 
-        subject = msg.get(
-            "Subject",
-            ""
-        )
+        with open(
+            file_path,
+            "wb"
+        ) as f:
+
+            f.write(
+                r.content
+            )
 
         print(
-            "Betreff:",
-            subject
+            "Gespeichert:",
+            filename
         )
-
-        for part in msg.walk():
-
-            filename = part.get_filename()
-
-            if not filename:
-                continue
-
-            if not filename.endswith(
-                ".csv"
-            ):
-                continue
-
-            file_path = (
-                INPUT /
-                filename
-            )
-
-            with open(
-                file_path,
-                "wb"
-            ) as f:
-
-                f.write(
-                    part.get_payload(
-                        decode=True
-                    )
-                )
-
-            print(
-                "Gespeichert:",
-                filename
-            )
 
     with open(
         processed_file,
@@ -137,13 +184,9 @@ for mail_id in mail_ids:
     ) as f:
 
         f.write(
-            mail_id_str + "\n"
+            mail_id + "\n"
         )
 
-    imap.store(
-        mail_id,
-        "+FLAGS",
-        "\\Seen"
-    )
-
-imap.logout()
+print(
+    "Fertig."
+)
